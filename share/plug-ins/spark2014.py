@@ -9,12 +9,33 @@
 This file provides support for using the SPARK 2014 toolset.
 """
 
+# TODO remove unused/duplicate libs
+
+# TODO HERE stuff to merge from itp2017.py
+
 import GPS
 import os_utils
 import os.path
 import tool_output
 import json
 import re
+
+import GPS
+import sys
+import os_utils
+import os.path
+import tool_output
+import json
+import re
+# Import graphics Gtk libraries for ITP elements like the proof tree
+from gi.repository import Gtk, Gdk, GLib, Pango
+import pygps
+from modules import Module
+from gps_utils.console_process import Console_Process
+import fnmatch
+
+
+
 
 # We create the actions and menus in XML instead of python to share the same
 # source for GPS and GNATbench (which only understands the XML input for now).
@@ -29,14 +50,19 @@ cur_exec_path = os.path.dirname(os.path.abspath(__file__))
 
 # The xml information are under spark2014
 spark2014_dir = os.path.join (cur_exec_path, "spark2014")
+sys.path.append(spark2014_dir)
+import itp_lib
+
 gnatprove_menus_file = os.path.join(spark2014_dir, "gnatprove_menus.xml")
 gnatprove_file = os.path.join(spark2014_dir, "gnatprove.xml")
 
-with open (gnatprove_menus_file, "r") as input_file:
+print gnatprove_menus_file
+print gnatprove_file
+with open (gnatprove_menus_file, 'r') as input_file:
     xml_gnatprove_menus = input_file.read()
 
-with open (gnatprove_file, "r") as input_file:
-    xml_gnatprove = input_file.read()
+with open (gnatprove_file, 'r') as input_file2:
+    xml_gnatprove = input_file2.read()
 
 # constants that are required by the plugin
 
@@ -70,7 +96,6 @@ advanced_prove_subp = 'Prove Subprogram'
 advanced_prove_line = 'Prove Line'
 advanced_prove_line_loc = 'Prove Line Location'
 advanced_prove_check = 'Prove Check'
-
 
 # getters for proof target depending on user profile
 
@@ -1050,3 +1075,54 @@ if gnatprove:
         xml_gnatprove_menus.format(root=get_root(), example=get_example_root())
 
     gnatprove_plug = GNATProve_Plugin()
+
+
+# TODO this does not need to exists inside this class
+# TODO never put extra_args because they cannot be removed
+# TODO remove this function which comes from SPARK plugin
+def start_ITP(tree, args=[]):
+    itp_lib.print_debug("[ITP] Launched")
+    # GPS.execute_action(action="Split horizontally")
+
+    # TODO all these options are already in spark2014.py
+    gnat_server = os_utils.locate_exec_on_path("gnat_server")
+    objdirs = GPS.Project.root().object_dirs()
+    default_objdir = objdirs[0]
+    obj_subdir_name = "gnatprove"
+    dir_name = os.path.join(default_objdir, obj_subdir_name)
+    os.chdir(dir_name)
+    mlw_file = ""
+    for dir_name, sub_dir_name, files in os.walk(dir_name):
+        for file in files:
+            if fnmatch.fnmatch(file, '*.mlw') and mlw_file == "":
+                mlw_file = os.path.join(dir_name, file)
+    if mlw_file == "":
+        itp_lib.print_debug("TODO")
+
+    # The arguments passed are of the following form inw which we need to remove '=':
+    # --limit-line=a.adb:42:42:VC_POSTCONDITION
+    arg_limit_line = args[0].replace('=', ' ')
+    command = gnat_server + " " + arg_limit_line + " " + mlw_file
+    print(command)
+    tree.start(command)
+
+
+def on_prove_itp(context):
+    global tree
+    # ITP part
+    tree = itp_lib.Tree_with_process()
+    msg = context._loc_msg
+    vc_kind = get_vc_kind(msg)
+    llarg = limit_line_option(msg, vc_kind)
+    args = [llarg]
+    if inside_generic_unit_context(context):
+        args.append("-U")
+    GPS.Locations.remove_category("Builder results")
+    start_ITP(tree, args)
+    #GPS.BuildTarget(launch_itp()).execute(extra_args=args,
+    #                                      synchronous=False)
+
+
+def exit_ITP():
+    global tree
+    tree.exit()
