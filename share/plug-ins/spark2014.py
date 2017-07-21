@@ -20,13 +20,7 @@ import tool_output
 import json
 import re
 
-import GPS
 import sys
-import os_utils
-import os.path
-import tool_output
-import json
-import re
 # Import graphics Gtk libraries for ITP elements like the proof tree
 from gi.repository import Gtk, Gdk, GLib, Pango
 import pygps
@@ -1090,6 +1084,7 @@ def start_ITP(tree, args=[]):
     default_objdir = objdirs[0]
     obj_subdir_name = "gnatprove"
     dir_name = os.path.join(default_objdir, obj_subdir_name)
+    # Gnat_server must be launched from gnatprove dir to find why3.conf
     os.chdir(dir_name)
     mlw_file = ""
     for dir_name, sub_dir_name, files in os.walk(dir_name):
@@ -1103,7 +1098,7 @@ def start_ITP(tree, args=[]):
     # --limit-line=a.adb:42:42:VC_POSTCONDITION
     arg_limit_line = args[0].replace('=', ' ')
     command = gnat_server + " " + arg_limit_line + " " + mlw_file
-    print(command)
+    itp_lib.print_debug(command)
     tree.start(command)
 
 
@@ -1118,11 +1113,16 @@ def on_prove_itp(context):
     if inside_generic_unit_context(context):
         args.append("-U")
     GPS.Locations.remove_category("Builder results")
+    # Add a hook to exit ITP before exiting GPS
+    GPS.Hook("before_exit_action_hook").add(exit_ITP)
     start_ITP(tree, args)
-    #GPS.BuildTarget(launch_itp()).execute(extra_args=args,
-    #                                      synchronous=False)
 
-
-def exit_ITP():
+# If this function fails, it is impossible to exit GPS, so we make sure it does
+# not. The hook is added in on_prove_itp.
+def exit_ITP(dummy_arg):
     global tree
-    tree.exit()
+    try:
+        tree.exit()
+        return True
+    except:
+        return True
