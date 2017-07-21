@@ -29,8 +29,6 @@ from gps_utils.console_process import Console_Process
 import fnmatch
 
 
-
-
 # We create the actions and menus in XML instead of python to share the same
 # source for GPS and GNATbench (which only understands the XML input for now).
 
@@ -38,6 +36,9 @@ import fnmatch
 # because GPS.contextual_context does not work when clicking on the right of a
 # line of code (see OB05-033).
 
+# This plugin now depends on gnatprove_menus.xml and gnatprove_file.xml which
+# are located in spark2014/. itp_lib which implements interactive theorem
+# proving is also in this directory.
 
 # Path to this executable
 cur_exec_path = os.path.dirname(os.path.abspath(__file__))
@@ -50,12 +51,10 @@ import itp_lib
 gnatprove_menus_file = os.path.join(spark2014_dir, "gnatprove_menus.xml")
 gnatprove_file = os.path.join(spark2014_dir, "gnatprove.xml")
 
-print gnatprove_menus_file
-print gnatprove_file
-with open (gnatprove_menus_file, 'r') as input_file:
+with open(gnatprove_menus_file, 'r') as input_file:
     xml_gnatprove_menus = input_file.read()
 
-with open (gnatprove_file, 'r') as input_file2:
+with open(gnatprove_file, 'r') as input_file2:
     xml_gnatprove = input_file2.read()
 
 # constants that are required by the plugin
@@ -1094,7 +1093,7 @@ def start_ITP(tree, args=[]):
     if mlw_file == "":
         itp_lib.print_debug("TODO")
 
-    # The arguments passed are of the following form inw which we need to remove '=':
+    # The arguments passed are of the following form (remove '='):
     # --limit-line=a.adb:42:42:VC_POSTCONDITION
     arg_limit_line = args[0].replace('=', ' ')
     command = gnat_server + " " + arg_limit_line + " " + mlw_file
@@ -1116,6 +1115,7 @@ def on_prove_itp(context):
     # Add a hook to exit ITP before exiting GPS
     GPS.Hook("before_exit_action_hook").add(exit_ITP)
     start_ITP(tree, args)
+
 
 # If this function fails, it is impossible to exit GPS, so we make sure it does
 # not. The hook is added in on_prove_itp.

@@ -1,4 +1,6 @@
-import GPS, sys
+# TODO Remove unnecessary libs
+import GPS
+import sys
 import os_utils
 import os.path
 import tool_output
@@ -86,7 +88,8 @@ def parse_notif(j, tree, proof_task):
             if update["proved"]:
                 tree.update_iter(node_id, 4, "Proved")
                 if node_id == abs_tree.first_node:
-                    if GPS.MDI.yes_no_dialog("All proved. Do you want to exit ?"):
+                    yes_no_text = "All proved. Do you want to exit ?"
+                    if GPS.MDI.yes_no_dialog(yes_no_text):
                         abs_tree.exit()
             else:
                 tree.update_iter(node_id, 4, "Not Proved")  # TODO
