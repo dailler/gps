@@ -299,7 +299,7 @@ class Tree:
         path = row.get_path()
         iter = self.model.get_iter(path)
         self.model.remove(iter)
-        self.node_id_to_row_ref.remove(node_id)
+        del self.node_id_to_row_ref[node_id]
 
     #  Automatically jumps from from_node to to_node if from_node is selected
     def node_jump_select(self, from_node, to_node):

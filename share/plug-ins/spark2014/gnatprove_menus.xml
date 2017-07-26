@@ -76,7 +76,7 @@
     </action>
     <action name="Exit ITP" category="GNATprove" output="none">
       <shell
-          lang="python">spark2014.exit_ITP()
+          lang="python">spark2014.exit_ITP("")
       </shell>
     </action>
     <action name="Show Report Action" category="GNATprove" output="none">
