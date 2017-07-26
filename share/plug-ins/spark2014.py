@@ -1115,9 +1115,10 @@ def on_prove_itp(context):
     if inside_generic_unit_context(context):
         args.append("-U")
     GPS.Locations.remove_category("Builder results")
-    # Add a hook to exit ITP before exiting GPS
-    GPS.Hook("before_exit_action_hook").add(exit_ITP)
     start_ITP(tree, file_name, args)
+    # Add a hook to exit ITP before exiting GPS. Add the hook after ITP launched
+    # last = False so that it is the first hook to be run
+    GPS.Hook("before_exit_action_hook").add(exit_ITP, last=False)
 
 
 # If this function fails, it is impossible to exit GPS, so we make sure it does
