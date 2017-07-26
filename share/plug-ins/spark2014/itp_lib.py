@@ -22,16 +22,22 @@ def print_debug(s):
         print(s)
 
 
-def print_error(message):
+def print_error(message, prompt=True):
     console = GPS.Console("ITP_interactive")
     console.write(message, mode="error")
-    console.write("\n> ")
+    if prompt:
+        console.write("\n> ")
+    else:
+        console.write("\n")
 
 
-def print_message(message):
+def print_message(message, prompt=True):
     console = GPS.Console("ITP_interactive")
     console.write(message, mode="text")
-    console.write("\n> ")
+    if prompt:
+        console.write("\n> ")
+    else:
+        console.write("\n")
 
 green = Gdk.RGBA(0, 1, 0, 0.2)
 red = Gdk.RGBA(1, 0, 0, 0.2)
@@ -158,7 +164,17 @@ def parse_message(j):
     if message_type == "Proof_error":
         print_error(message["error"])
     elif message_type == "Transf_error":
-        print_error(message["error"])
+        tr_name = message["tr_name"]
+        arg = message["failing_arg"]
+        loc = message["loc"]
+        msg = message["error"]
+        doc = message["doc"]
+        if arg == "":
+            print_error(msg + "\nTranformation failed: \n" + tr_name + "\n\n", prompt=False)
+            print_message(doc)
+        else:
+            print_error(tr_name + "\nTransformation failed. \nOn argument: \n" + arg + " \n" + msg + "\n\n", prompt=False)
+            print_message(doc)
     elif message_type == "Strat_error":
         print_error(message["error"])
     elif message_type == "Replay_Info":
