@@ -1073,7 +1073,7 @@ if gnatprove:
 # TODO this does not need to exists inside this class
 # TODO never put extra_args because they cannot be removed
 # TODO remove this function which comes from SPARK plugin
-def start_ITP(tree, args=[]):
+def start_ITP(tree, file_name, args=[]):
     itp_lib.print_debug("[ITP] Launched")
     # GPS.execute_action(action="Split horizontally")
 
@@ -1086,10 +1086,12 @@ def start_ITP(tree, args=[]):
     # Gnat_server must be launched from gnatprove dir to find why3.conf
     os.chdir(dir_name)
     mlw_file = ""
+    file_name_no_ext = os.path.splitext(file_name)[0]
     for dir_name, sub_dir_name, files in os.walk(dir_name):
         for file in files:
-            if fnmatch.fnmatch(file, '*.mlw') and mlw_file == "":
+            if fnmatch.fnmatch(file, file_name_no_ext + '.mlw') and mlw_file == "":
                 mlw_file = os.path.join(dir_name, file)
+                itp_lib.print_debug (mlw_file)
     if mlw_file == "":
         itp_lib.print_debug("TODO")
 
@@ -1108,13 +1110,14 @@ def on_prove_itp(context):
     msg = context._loc_msg
     vc_kind = get_vc_kind(msg)
     llarg = limit_line_option(msg, vc_kind)
+    file_name = os.path.basename(msg.get_file().path)
     args = [llarg]
     if inside_generic_unit_context(context):
         args.append("-U")
     GPS.Locations.remove_category("Builder results")
     # Add a hook to exit ITP before exiting GPS
     GPS.Hook("before_exit_action_hook").add(exit_ITP)
-    start_ITP(tree, args)
+    start_ITP(tree, file_name, args)
 
 
 # If this function fails, it is impossible to exit GPS, so we make sure it does
