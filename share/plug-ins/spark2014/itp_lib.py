@@ -120,6 +120,7 @@ def parse_notif(j, tree, proof_task):
                     tree.update_iter(node_id, 4, "proof_attempt")
         else:
             print_debug("TODO")
+        abs_tree.get_next_id(str(node_id))
         print_debug("Node_change")
     elif notif_type == "Remove":
         node_id = j["node_ID"]
@@ -153,8 +154,8 @@ def parse_notif(j, tree, proof_task):
         print_debug("TODO Else")
 
     # TODO next_unproven_node_ID is called too many times... Find a way to solve this
-    if not (notif_type == "Next_Unproven_Node_Id" or notif_type == "Task" or abs_tree.save_and_exit):
-        abs_tree.get_next_id()
+#    if not (notif_type == "Next_Unproven_Node_Id" or notif_type == "Task" or abs_tree.save_and_exit):
+#        abs_tree.get_next_id()
 
 
 def parse_message(j):
@@ -323,7 +324,12 @@ class Tree:
         from_node_row = self.node_id_to_row_ref[from_node]
         from_node_path = from_node_row.get_path()
         from_node_iter = self.model.get_iter(from_node_path)
-        if (tree_selection.path_is_selected(from_node_path)):
+        # TODO ad hoc way to get the parent node. This should be changed
+        parent = int(self.model[from_node_iter][1])
+        parent_row = self.node_id_to_row_ref[parent]
+        parent_path = parent_row.get_path()
+        if (tree_selection.path_is_selected(from_node_path) or
+                tree_selection.path_is_selected(parent_path)):
             tree_selection.unselect_all()
             to_node_row = self.node_id_to_row_ref[to_node]
             to_node_path = to_node_row.get_path()
@@ -448,12 +454,5 @@ class Tree_with_process:
         request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": false}"
         self.send(request)
 
-    def get_next_id(self):
-        selection = self.tree.view.get_selection()
-        model, paths = selection.get_selected_rows()
-        print_debug(paths)
-        if len(paths) == 1:
-            for i in paths:
-                cur_iter = model.get_iter(i)
-                it = model[cur_iter][0]
-                self.send("{\"ide_request\": \"Get_first_unproven_node\", \"node_ID\":" + it + "}")
+    def get_next_id(self, modified_id):
+        self.send("{\"ide_request\": \"Get_first_unproven_node\", \"node_ID\":" + modified_id + "}")
