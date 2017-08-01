@@ -1137,6 +1137,7 @@ def on_prove_itp(context):
     tree = itp_lib.Tree_with_process()
     msg = context._loc_msg
     vc_kind = get_vc_kind(msg)
+    text_msg = get_comp_text(msg)
     msg_line = map_msg[text_msg, 'check_line']
     msg_col = map_msg[text_msg, 'check_col']
     llarg = limit_line_option(msg, msg_line, msg_col, vc_kind)
