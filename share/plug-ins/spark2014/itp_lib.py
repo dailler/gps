@@ -414,9 +414,12 @@ class Tree_with_process:
             print ("Bad type")
 
     def select_function(self, select, model, path, currently_selected):
-        tree_iter = model.get_iter(path)
-        self.get_task(model[tree_iter][0])
-        return True
+        if not currently_selected:
+            tree_iter = model.get_iter(path)
+            self.get_task(model[tree_iter][0])
+            return True
+        else:
+            return True
 
     def interactive_console_input(self, console, command):
         # TODO
