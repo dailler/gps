@@ -352,7 +352,7 @@ class Tree_with_process:
 
         # init the tree
         self.tree = Tree()
-        self.process = GPS.Process(command, regexp=">>>>", on_match=self.check_notifications)
+        self.process = GPS.Process(command, task_manager=False, regexp=">>>>", on_match=self.check_notifications)
         self.console = GPS.Console("ITP_interactive", on_input=self.interactive_console_input)
         self.console.write("> ")
         # Back to the Messages console
@@ -454,7 +454,7 @@ class Tree_with_process:
 
     # TODO this is also a send_request
     def get_task(self, node_id):
-        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": false}"
+        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": false, \"loc\": false}"
         self.send(request)
 
     def get_next_id(self, modified_id):
