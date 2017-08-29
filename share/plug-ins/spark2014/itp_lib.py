@@ -454,7 +454,7 @@ class Tree_with_process:
 
     # TODO this is also a send_request
     def get_task(self, node_id):
-        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": false, \"loc\": false}"
+        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": true, \"loc\": false}"
         self.send(request)
 
     def get_next_id(self, modified_id):
