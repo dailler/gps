@@ -469,6 +469,7 @@ class Tree_with_process:
     def command_request(self, command, node_id):
         # TODO if remove do something els if save also do something else
         # TODO very ad hoc
+        print_message("")
         if command == "Save":
             return "{\"ide_request\": \"Save_req\" " + " }"
         elif command == "Remove":
