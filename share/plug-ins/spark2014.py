@@ -28,6 +28,7 @@ from modules import Module
 from gps_utils.console_process import Console_Process
 import fnmatch
 
+debug_session = True
 
 # We create the actions and menus in XML instead of python to share the same
 # source for GPS and GNATbench (which only understands the XML input for now).
@@ -1126,7 +1127,10 @@ def start_ITP(tree, file_name, args=[]):
     # The arguments passed are of the following form (remove '='):
     # --limit-line=a.adb:42:42:VC_POSTCONDITION
     arg_limit_line = args[0].replace('=', ' ')
-    command = gnat_server + " " + arg_limit_line + " " + mlw_file
+    if debug_session:
+        command = gnat_server + " " + mlw_file
+    else:
+        command = gnat_server + " " + arg_limit_line + " " + mlw_file
     itp_lib.print_debug(command)
     tree.start(command)
 

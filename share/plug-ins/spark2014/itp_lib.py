@@ -285,7 +285,7 @@ class Tree:
         self.node_id_to_row_ref[node] = row
 
     def add_iter(self, node, parent, name, node_type, proved):
-        if parent == 0:
+        if parent == 0: # TODO parent doit etre envoye avec le bon numero de parent... ie 0 si c'est la node sur laquelle le focus est ?
             parent_iter = self.model.get_iter_first()
         else:
             parent_iter = self.get_iter(parent)
@@ -326,6 +326,9 @@ class Tree:
         from_node_iter = self.model.get_iter(from_node_path)
         # TODO ad hoc way to get the parent node. This should be changed
         parent = int(self.model[from_node_iter][1])
+        # The root node is never printed in the tree
+        if parent == 0:
+            parent = int(from_node)
         parent_row = self.node_id_to_row_ref[parent]
         parent_path = parent_row.get_path()
         if (tree_selection.path_is_selected(from_node_path) or
@@ -341,6 +344,11 @@ class Tree_with_process:
     def __init__(self):
         # init local variables
         self.save_and_exit = False
+        # send_queue and size_queue are used for request sent by the IDE to ITP
+        # server.
+        self.send_queue = ""
+        self.size_queue = 0
+        self.checking_notification = False
         print_debug("ITP launched")
 
     def start(self, command):
@@ -352,7 +360,7 @@ class Tree_with_process:
 
         # init the tree
         self.tree = Tree()
-        self.process = GPS.Process(command, task_manager=False, regexp=">>>>", on_match=self.check_notifications)
+        self.process = GPS.Process(command, regexp=">>>>", on_match=self.check_notifications)
         self.console = GPS.Console("ITP_interactive", on_input=self.interactive_console_input)
         self.console.write("> ")
         # Back to the Messages console
@@ -369,6 +377,9 @@ class Tree_with_process:
         self.proof_task.set_read_only()
         # TODO should prefer using group and position
         GPS.execute_action(action="Split horizontally")
+
+        # Initialize the Timeout for sending requests to ITP server
+        GPS.Timeout(300, self.actual_send)
 
     def kill(self):
         a = GPS.Console("ITP_interactive")
@@ -399,6 +410,7 @@ class Tree_with_process:
             self.kill()
 
     def check_notifications(self, unused, delimiter, notification):
+        self.checking_notification = True
         print_debug(notification)
         try:
             # Remove remaining stderr output (stderr and stdout are mixed) by
@@ -412,6 +424,7 @@ class Tree_with_process:
             print ("Bad Json key")
         except (TypeError):
             print ("Bad type")
+        self.checking_notification = False
 
     def select_function(self, select, model, path, currently_selected):
         if not currently_selected:
@@ -424,20 +437,38 @@ class Tree_with_process:
     def interactive_console_input(self, console, command):
         # TODO
         tree_selection = self.tree.view.get_selection()
-        node_id = 0
         tree_selection.selected_foreach(lambda tree_model, tree_path, tree_iter: self.send_request(tree_model[tree_iter][0], command))
-        print_debug(node_id)
 
-    # This is used as a wrapper (for debug) that actually sends the message
+
+    # This function actually send data and is also put into a Timeout call
+    def actual_send(self, useless_timeout):
+        print_debug ("sent")
+        # TODO this should not be necessary to prevent deadlock with our own
+        # code here. This looks really bad.
+        if not self.size_queue == 0 and not self.checking_notification:
+            self.process.send(self.send_queue)
+            self.send_queue = ""
+            self.size_queue = 0
+
+    # This is used as a wrapper (for debug) that actually create the message.
+    # The function really sending this is called actual_send. 2 functions are
+    # necessary because we want to send several messages at once. We also want
+    # to send messages regularly: this is easier to have the simplest function
+    # in a timeout.
     def send(self, s):
         if debug_mode:
             print_message(s)
-        self.process.send(s)
+        self.send_queue = self.send_queue + s + ">>>>"
+        self.size_queue = self.size_queue + len(s) + 4
+        # From different documentation, it can be assumed that pipes have a size
+        # of at least 4096 (on all platforms). We also assume that a single
+        # send_request is of size less than 200 thus the 3800 bound.
+        if self.size_queue > 3800:
+            self.actual_send(0)
 
     def command_request(self, command, node_id):
         # TODO if remove do something els if save also do something else
         # TODO very ad hoc
-        print_message("")
         if command == "Save":
             return "{\"ide_request\": \"Save_req\" " + " }"
         elif command == "Remove":
@@ -454,7 +485,7 @@ class Tree_with_process:
 
     # TODO this is also a send_request
     def get_task(self, node_id):
-        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": true, \"loc\": false}"
+        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": false, \"loc\": false}"
         self.send(request)
 
     def get_next_id(self, modified_id):
