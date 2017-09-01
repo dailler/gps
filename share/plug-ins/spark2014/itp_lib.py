@@ -146,6 +146,7 @@ def parse_notif(j, tree, proof_task):
         proof_task.insert(j["task"])
         proof_task.save(interactive=False)
         proof_task.set_read_only(read_only=True)
+        proof_task.current_view().goto(proof_task.end_of_buffer())
         GPS.Console()
         print_debug(notif_type)
     elif notif_type == "File_contents":
@@ -486,7 +487,7 @@ class Tree_with_process:
 
     # TODO this is also a send_request
     def get_task(self, node_id):
-        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": false, \"loc\": false}"
+        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": true, \"loc\": false}"
         self.send(request)
 
     def get_next_id(self, modified_id):
