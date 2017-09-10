@@ -202,6 +202,14 @@ def parse_message(j):
     else:
         print_debug("TODO")
 
+# Returns the biggest int res such that res < last and s[first:res] finish with
+# sep.
+def find_last (s, sep, first, last):
+    res = s.find(sep, first, last)
+    if res == -1 or res == first:
+        return(first)
+    else:
+        return (find_last(s, sep, (res + len(sep)), last))
 
 class Tree:
 
@@ -340,7 +348,6 @@ class Tree:
             to_node_iter = self.model.get_iter(to_node_path)
             tree_selection.select_path(to_node_path)
 
-
 class Tree_with_process:
     def __init__(self):
         # init local variables
@@ -421,6 +428,7 @@ class Tree_with_process:
             parse_notif(p, self, self.proof_task)
         except (ValueError):
             print ("Bad Json value")
+            print (notification)
         except (KeyError):
             print ("Bad Json key")
         except (TypeError):
@@ -440,16 +448,22 @@ class Tree_with_process:
         tree_selection = self.tree.view.get_selection()
         tree_selection.selected_foreach(lambda tree_model, tree_path, tree_iter: self.send_request(tree_model[tree_iter][0], command))
 
-
     # This function actually send data and is also put into a Timeout call
     def actual_send(self, useless_timeout):
         print_debug ("sent")
         # TODO this should not be necessary to prevent deadlock with our own
         # code here. This looks really bad.
         if not self.size_queue == 0 and not self.checking_notification:
-            self.process.send(self.send_queue)
-            self.send_queue = ""
-            self.size_queue = 0
+            # We send only complete request and less than 4080 char
+            n = find_last(self.send_queue, ">>>>", 0, 4080)
+            if n == -1 or n == 0 or n == None:
+                self.send_queue = ""
+                self.size_queue = 0
+            else:
+                self.process.send(self.send_queue[0:n])
+                self.send_queue = self.send_queue[n:]
+                self.size_queue = len(self.send_queue)
+
 
     # This is used as a wrapper (for debug) that actually create the message.
     # The function really sending this is called actual_send. 2 functions are
@@ -462,8 +476,8 @@ class Tree_with_process:
         self.send_queue = self.send_queue + s + ">>>>"
         self.size_queue = self.size_queue + len(s) + 4
         # From different documentation, it can be assumed that pipes have a size
-        # of at least 4096 (on all platforms). We also assume that a single
-        # send_request is of size less than 200 thus the 3800 bound.
+        # of at least 4096 (on all platforms). So, our heuristic is to check at
+        # 3800 if it is worth sending before the timeout automatically does it.
         if self.size_queue > 3800:
             self.actual_send(0)
 
