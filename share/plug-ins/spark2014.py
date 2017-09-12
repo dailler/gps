@@ -65,6 +65,8 @@ obj_subdir_name = toolname
 report_file_name = toolname + '.out'
 prefix = 'SPARK'
 menu_prefix = '/' + prefix
+# hook on exit when ITP has been launched
+hook_itp = False
 
 examine_all = 'Examine All'
 examine_root_project = 'Examine All Sources'
@@ -1137,6 +1139,7 @@ def start_ITP(tree, file_name, args=[]):
 
 def on_prove_itp(context):
     global tree
+    global hook_itp
     # ITP part
     tree = itp_lib.Tree_with_process()
     msg = context._loc_msg
@@ -1153,7 +1156,9 @@ def on_prove_itp(context):
     start_ITP(tree, file_name, args)
     # Add a hook to exit ITP before exiting GPS. Add the hook after ITP launched
     # last = False so that it is the first hook to be run
-    GPS.Hook("before_exit_action_hook").add(exit_ITP, last=False)
+    if hook_itp == False:
+        GPS.Hook("before_exit_action_hook").add(exit_ITP, last=False)
+        hook_itp = True
 
 
 # If this function fails, it is impossible to exit GPS, so we make sure it does
