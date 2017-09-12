@@ -300,10 +300,9 @@ class Tree:
             parent_iter = self.get_iter(parent)
             if parent_iter is None:
                 if debug_mode:
-                    print ("add_iter error: parent does not exists %d", parent)
-                parent_iter = self.model.get_iter_first()
+                    print ("add_iter ?error?: parent does not exists %d", parent)
 
-        # Append as a child of parent_iter
+        # Append as a child of parent_iter. parent_iter can be None (toplevel iter)
         new_iter = self.model.append(parent_iter)
         color = create_color(proved)
         self.model[new_iter] = [str(node), str(parent), name, node_type, proved, color]

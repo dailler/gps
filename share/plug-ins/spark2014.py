@@ -28,7 +28,7 @@ from modules import Module
 from gps_utils.console_process import Console_Process
 import fnmatch
 
-debug_session = True
+debug_session = False
 
 # We create the actions and menus in XML instead of python to share the same
 # source for GPS and GNATbench (which only understands the XML input for now).
