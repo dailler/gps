@@ -84,8 +84,9 @@ def parse_notif(j, tree, proof_task):
         name = j["name"]
         detached = j["detached"]
         tree.add_iter(node_id, parent_id, name, node_type, "Invalid")
-        if abs_tree.first_node <= 0:
-            abs_tree.first_node = node_id
+        if not parent_id in tree.node_id_to_row_ref:
+            # If the parent cannot be found then it is a root.
+            tree.roots.append(node_id)
         print_debug("New_node")
     elif notif_type == "Node_change":
         node_id = j["node_ID"]
@@ -93,7 +94,7 @@ def parse_notif(j, tree, proof_task):
         if update["update_info"] == "Proved":
             if update["proved"]:
                 tree.update_iter(node_id, 4, "Proved")
-                if node_id == abs_tree.first_node:
+                if node_id in tree.roots and tree.roots_is_ok():
                     yes_no_text = "All proved. Do you want to exit ?"
                     if GPS.MDI.yes_no_dialog(yes_no_text):
                         abs_tree.exit()
@@ -230,6 +231,10 @@ class Tree:
         # TODO by default append this box to the GPS.MDI
         GPS.MDI.add(self.box, "Proof Tree", "Proof Tree", group=101, position=4) # TODO find the correct groups
 
+        # roots is a list of nodes that don't have parents. When they are
+        # all proved, we know the check is proved.
+        self.roots = []
+
         cell = Gtk.CellRendererText(xalign=0)
         col2 = Gtk.TreeViewColumn("Name")
         col2.pack_start(cell, True)
@@ -329,23 +334,44 @@ class Tree:
     #  Automatically jumps from from_node to to_node if from_node is selected
     def node_jump_select(self, from_node, to_node):
         tree_selection = self.view.get_selection()
-        from_node_row = self.node_id_to_row_ref[from_node]
-        from_node_path = from_node_row.get_path()
-        from_node_iter = self.model.get_iter(from_node_path)
-        # TODO ad hoc way to get the parent node. This should be changed
-        parent = int(self.model[from_node_iter][1])
-        # The root node is never printed in the tree
-        if parent == 0:
-            parent = int(from_node)
-        parent_row = self.node_id_to_row_ref[parent]
-        parent_path = parent_row.get_path()
-        if (tree_selection.path_is_selected(from_node_path) or
-                tree_selection.path_is_selected(parent_path)):
-            tree_selection.unselect_all()
-            to_node_row = self.node_id_to_row_ref[to_node]
-            to_node_path = to_node_row.get_path()
-            to_node_iter = self.model.get_iter(to_node_path)
-            tree_selection.select_path(to_node_path)
+        try:
+            if not tree_selection.count_selected_rows() == 0 and not from_node is None:
+                from_node_row = self.node_id_to_row_ref[from_node]
+                from_node_path = from_node_row.get_path()
+                from_node_iter = self.model.get_iter(from_node_path)
+                # TODO ad hoc way to get the parent node. This should be changed
+                parent = int(self.model[from_node_iter][1])
+                # The root node is never printed in the tree
+                if parent == 0:
+                    parent = from_node
+                parent_row = self.node_id_to_row_ref[parent]
+                parent_path = parent_row.get_path()
+                if (tree_selection.path_is_selected(from_node_path) or
+                    tree_selection.path_is_selected(parent_path)):
+                    tree_selection.unselect_all()
+                    to_node_row = self.node_id_to_row_ref[to_node]
+                    to_node_path = to_node_row.get_path()
+                    to_node_iter = self.model.get_iter(to_node_path)
+                    tree_selection.select_path(to_node_path)
+            else:
+                to_node_row = self.node_id_to_row_ref[to_node]
+                to_node_path = to_node_row.get_path()
+                to_node_iter = self.model.get_iter(to_node_path)
+                tree_selection.select_path(to_node_path)
+        except:
+            # The node we are jumping to does not exists
+            print_debug ("Error in jumping: the node : " + str(to_node) + " probably does not exists")
+
+    # Checks if all the roots are proved. If so, the check is proved and we can
+    # exit.
+    def roots_is_ok(self):
+        b = True
+        for node_id in self.roots:
+            row = self.node_id_to_row_ref[node_id]
+            path = row.get_path()
+            iter = self.model.get_iter(path)
+            b = b and self.model[iter][4] == "Proved"
+        return(b)
 
 class Tree_with_process:
     def __init__(self):
@@ -361,9 +387,6 @@ class Tree_with_process:
     def start(self, command):
         # init local variables
         self.save_and_exit = False
-        # We need to know the first_node returned by itp_server so that when
-        # it is proved, we can send a message to the user.
-        self.first_node = -1
 
         # init the tree
         self.tree = Tree()
@@ -430,8 +453,10 @@ class Tree_with_process:
             print (notification)
         except (KeyError):
             print ("Bad Json key")
+            print (notification)
         except (TypeError):
             print ("Bad type")
+            print (notification)
         self.checking_notification = False
 
     def select_function(self, select, model, path, currently_selected):
