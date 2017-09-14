@@ -384,7 +384,8 @@ class Tree_with_process:
         self.checking_notification = False
         print_debug("ITP launched")
 
-    def start(self, command):
+    def start(self, command, mlw_file_name):
+        self.file_name = mlw_file_name
         # init local variables
         self.save_and_exit = False
 
@@ -510,6 +511,12 @@ class Tree_with_process:
         # TODO very ad hoc
         print_message("")
         if command == "Save":
+            # touch source file so that gnatprove believes that gnat2why should
+            # be called again. Otherwise, we change the session and the change
+            # cannot be seen in gnatprove because it does not recompile.
+            if os.path.exists(self.file_name):
+                # Set the modification time as now.
+                os.utime(self.file_name, None)
             return "{\"ide_request\": \"Save_req\" " + " }"
         elif command == "Remove":
             return ("{\"ide_request\": \"Remove_subtree\", \"node_ID\":" +

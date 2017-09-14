@@ -1104,7 +1104,7 @@ if gnatprove:
 # TODO this does not need to exists inside this class
 # TODO never put extra_args because they cannot be removed
 # TODO remove this function which comes from SPARK plugin
-def start_ITP(tree, file_name, args=[]):
+def start_ITP(tree, file_name, abs_fn_path, args=[]):
     itp_lib.print_debug("[ITP] Launched")
     # GPS.execute_action(action="Split horizontally")
 
@@ -1134,7 +1134,7 @@ def start_ITP(tree, file_name, args=[]):
     else:
         command = gnat_server + " " + arg_limit_line + " " + mlw_file
     itp_lib.print_debug(command)
-    tree.start(command)
+    tree.start(command, abs_fn_path)
 
 
 def on_prove_itp(context):
@@ -1148,12 +1148,13 @@ def on_prove_itp(context):
     msg_line = map_msg[text_msg, 'check_line']
     msg_col = map_msg[text_msg, 'check_col']
     llarg = limit_line_option(msg, msg_line, msg_col, vc_kind)
-    file_name = os.path.basename(msg.get_file().path)
+    abs_fn_path = msg.get_file().path
+    file_name = os.path.basename(abs_fn_path)
     args = [llarg]
     if inside_generic_unit_context(context):
         args.append("-U")
     GPS.Locations.remove_category("Builder results")
-    start_ITP(tree, file_name, args)
+    start_ITP(tree, file_name, abs_fn_path, args)
     # Add a hook to exit ITP before exiting GPS. Add the hook after ITP launched
     # last = False so that it is the first hook to be run
     if hook_itp == False:
