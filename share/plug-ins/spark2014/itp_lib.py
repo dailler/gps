@@ -294,13 +294,10 @@ class Tree:
         self.node_id_to_row_ref[node] = row
 
     def add_iter(self, node, parent, name, node_type, proved):
-        if parent == 0:
-            parent_iter = self.model.get_iter_first()
-        else:
-            parent_iter = self.get_iter(parent)
-            if parent_iter is None:
-                if debug_mode:
-                    print ("add_iter ?error?: parent does not exists %d", parent)
+        parent_iter = self.get_iter(parent)
+        if parent_iter is None:
+            if debug_mode:
+                print ("add_iter ?error?: parent does not exists %d", parent)
 
         # Append as a child of parent_iter. parent_iter can be None (toplevel iter)
         new_iter = self.model.append(parent_iter)
