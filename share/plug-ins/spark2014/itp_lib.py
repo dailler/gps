@@ -99,13 +99,13 @@ def parse_notif(j, tree, proof_task):
                     if GPS.MDI.yes_no_dialog(yes_no_text):
                         abs_tree.exit()
             else:
-                tree.update_iter(node_id, 4, "Not Proved")  # TODO
+                tree.update_iter(node_id, 4, "Not Proved")
         elif update["update_info"] == "Proof_status_change":
             proof_attempt = update["proof_attempt"]
             obsolete = update["obsolete"]
             limit = update["limit"]
             if obsolete:
-                tree.update_iter(node_id, 4, "Obsolete")  # TODO
+                tree.update_iter(node_id, 4, "Obsolete")
             else:
                 proof_attempt_result = proof_attempt["proof_attempt"]
                 if proof_attempt_result == "Done":
@@ -155,10 +155,6 @@ def parse_notif(j, tree, proof_task):
     else:
         print_debug("TODO Else")
 
-    # TODO next_unproven_node_ID is called too many times... Find a way to solve this
-#    if not (notif_type == "Next_Unproven_Node_Id" or notif_type == "Task" or abs_tree.save_and_exit):
-#        abs_tree.get_next_id()
-
 
 def parse_message(j):
     notif_type = j["notification"]
@@ -191,7 +187,7 @@ def parse_message(j):
     elif message_type == "Information":
         print_message(message["information"])
     elif message_type == "Task_Monitor":
-        print_debug(notif_type)  # TODO This can be displayed in GPS
+        print_debug(notif_type)
     elif message_type == "Parse_Or_Type_Error":
         print_error(message["error"])
     elif message_type == "Error":
@@ -218,7 +214,8 @@ class Tree:
         # Create a tree that can be appended anywhere
         self.box = Gtk.VBox()
         scroll = Gtk.ScrolledWindow()
-        # TODO decide which data we want in this tree
+        # This tree contains too much information including debug information.
+        # A node is (node_ID, parent_ID, name, node_type, color).
         self.model = Gtk.TreeStore(str, str, str, str, str, Gdk.RGBA)
         # Create the view as a function of the model
         self.view = Gtk.TreeView(self.model)
@@ -228,10 +225,10 @@ class Tree:
         scroll.add(self.view)
         self.box.pack_start(scroll, True, True, 0)
 
-        # TODO by default append this box to the GPS.MDI
-        GPS.MDI.add(self.box, "Proof Tree", "Proof Tree", group=101, position=4) # TODO find the correct groups
+        # TODO to be found: correct groups ???
+        GPS.MDI.add(self.box, "Proof Tree", "Proof Tree", group=101, position=4)
 
-        # roots is a list of nodes that don't have parents. When they are
+        # roots is a list of nodes that does not have parents. When they are
         # all proved, we know the check is proved.
         self.roots = []
 
@@ -239,13 +236,13 @@ class Tree:
         col2 = Gtk.TreeViewColumn("Name")
         col2.pack_start(cell, True)
         col2.add_attribute(cell, "text", 2)
-        # TODO test
         col2.add_attribute(cell, "background_rgba", 5)
         col2.set_expand(True)
         self.view.append_column(col2)
 
         # Populate with columns we want
         if debug_mode:
+            # Node_ID
             cell = Gtk.CellRendererText(xalign=0)
             self.close_col = Gtk.TreeViewColumn("ID")
             self.close_col.pack_start(cell, True)
@@ -253,8 +250,8 @@ class Tree:
             self.close_col.add_attribute(cell, "background_rgba", 5)
             self.view.append_column(self.close_col)
 
-        # TODO ???
         if debug_mode:
+            # Node parent
             cell = Gtk.CellRendererText(xalign=0)
             col = Gtk.TreeViewColumn("parent")
             col.pack_start(cell, True)
@@ -263,7 +260,7 @@ class Tree:
             col.add_attribute(cell, "background_rgba", 5)
             self.view.append_column(col)
 
-        # TODO ???
+        # Node color (proved or not ?)
         cell = Gtk.CellRendererText(xalign=0)
         col = Gtk.TreeViewColumn("Status")
         col.pack_start(cell, True)
@@ -272,11 +269,10 @@ class Tree:
         col.set_expand(True)
         self.view.append_column(col)
 
-        # TODO reinitialize the map from node_id to row_ref
         # We have a dictionnary from node_id to row_references because we want
         # an "efficient" way to get/remove/etc a particular row and we are not
         # going to go through the whole tree each time: O(n) vs O (ln n)
-        # TODO find something that do exactly this in Gtk).
+        # TODO find something that do exactly this in Gtk ??? (does not exist ?)
         self.node_id_to_row_ref = {}
 
     def exit(self):
@@ -292,7 +288,8 @@ class Tree:
                 print ("get_iter error: node does not exists %d", node)
             return None
 
-    #  Associate the corresponding row of an iter to its node in node_id_to_row_ref
+    # Associate the corresponding row of an iter to its node in
+    # node_id_to_row_ref.
     def set_iter(self, new_iter, node):
         path = self.model.get_path(new_iter)
         row = Gtk.TreeRowReference.new(self.model, path)
@@ -312,7 +309,8 @@ class Tree:
         color = create_color(proved)
         self.model[new_iter] = [str(node), str(parent), name, node_type, proved, color]
         self.set_iter(new_iter, node)
-        # TODO expand all at the end ???
+        # ??? We currently always expand the tree. We may not want to do that in
+        # the future.
         self.view.expand_all()
 
     def update_iter(self, node_id, field, value):
@@ -339,7 +337,7 @@ class Tree:
                 from_node_row = self.node_id_to_row_ref[from_node]
                 from_node_path = from_node_row.get_path()
                 from_node_iter = self.model.get_iter(from_node_path)
-                # TODO ad hoc way to get the parent node. This should be changed
+                # ??? ad hoc way to get the parent node. This should be changed
                 parent = int(self.model[from_node_iter][1])
                 # The root node is never printed in the tree
                 if parent == 0:
@@ -398,7 +396,6 @@ class Tree_with_process:
         GPS.Console()
 
         # Query task each time something is clicked
-        # TODO see if it is more efficient to save task in GPS
         tree_selection = self.tree.view.get_selection()
         tree_selection.set_select_function(self.select_function)
 
@@ -406,10 +403,12 @@ class Tree_with_process:
         proof_task_file = GPS.File("Proof Task", local=True)
         self.proof_task = GPS.EditorBuffer.get(proof_task_file, force=True, open=True)
         self.proof_task.set_read_only()
-        # TODO should prefer using group and position
+        # ??? should prefer using group and position. Currently, this works.
         GPS.execute_action(action="Split horizontally")
 
-        # Initialize the Timeout for sending requests to ITP server
+        # Initialize the Timeout for sending requests to ITP server. 300
+        # milliseconds is arbitrary. It looks like it works and it should be ok
+        # for interactivity.
         GPS.Timeout(300, self.actual_send)
 
     def kill(self):
@@ -421,7 +420,7 @@ class Tree_with_process:
         except:
             print ("Cannot close console")
         try:
-            self.proof_task.close()  # TODO force ?
+            self.proof_task.close()  # TODO force ???
         except:
             print ("Cannot close proof_task")
         try:
@@ -469,7 +468,6 @@ class Tree_with_process:
             return True
 
     def interactive_console_input(self, console, command):
-        # TODO
         tree_selection = self.tree.view.get_selection()
         tree_selection.selected_foreach(lambda tree_model, tree_path, tree_iter: self.send_request(tree_model[tree_iter][0], command))
 
@@ -507,8 +505,8 @@ class Tree_with_process:
             self.actual_send(0)
 
     def command_request(self, command, node_id):
-        # TODO if remove do something els if save also do something else
-        # TODO very ad hoc
+        # This is an ad hoc function that allows save, remove node, and classic
+        # command from the commandline.
         print_message("")
         if command == "Save":
             # touch source file so that gnatprove believes that gnat2why should
@@ -530,7 +528,7 @@ class Tree_with_process:
         print_debug(request)
         self.send(request)
 
-    # TODO this is also a send_request
+    # Specific get_task function to get a task from the itp_server.
     def get_task(self, node_id):
         request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": true, \"loc\": false}"
         self.send(request)
