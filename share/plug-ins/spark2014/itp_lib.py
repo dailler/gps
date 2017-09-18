@@ -67,12 +67,10 @@ def create_color(s):
 # This functions takes a Json object and a proof tree and treat it as a
 # notification on the proof tree. It makes the appropriate update to the tree
 # model.
-# TODO add exceptions
-def parse_notif(j, tree, proof_task):
+def parse_notif(j, abs_tree, proof_task):
     print_debug(j)
-    # TODO rewrite this
-    abs_tree = tree
-    tree = tree.tree
+    # Most of the changes concern only the tree part.
+    tree = abs_tree.tree
     try:
         notif_type = j["notification"]
     except:
@@ -296,7 +294,7 @@ class Tree:
         self.node_id_to_row_ref[node] = row
 
     def add_iter(self, node, parent, name, node_type, proved):
-        if parent == 0: # TODO parent doit etre envoye avec le bon numero de parent... ie 0 si c'est la node sur laquelle le focus est ?
+        if parent == 0:
             parent_iter = self.model.get_iter_first()
         else:
             parent_iter = self.get_iter(parent)
@@ -474,8 +472,10 @@ class Tree_with_process:
     # This function actually send data and is also put into a Timeout call
     def actual_send(self, useless_timeout):
         print_debug ("sent")
-        # TODO this should not be necessary to prevent deadlock with our own
-        # code here. This looks really bad.
+        # TODO ??? this should not be necessary to prevent deadlock with our own
+        # code here. This looks really bad and should be investigated: if this
+        # kind of checks really is necessary, it should be done in function
+        # send/on_match from GPS.Process (obviously not here).
         if not self.size_queue == 0 and not self.checking_notification:
             # We send only complete request and less than 4080 char
             n = find_last(self.send_queue, ">>>>", 0, 4080)

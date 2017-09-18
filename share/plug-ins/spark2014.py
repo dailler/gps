@@ -11,8 +11,6 @@ This file provides support for using the SPARK 2014 toolset.
 
 # TODO remove unused/duplicate libs
 
-# TODO HERE stuff to merge from itp2017.py
-
 import GPS
 import os_utils
 import os.path
@@ -1101,20 +1099,16 @@ if gnatprove:
     gnatprove_plug = GNATProve_Plugin()
 
 
-# TODO this does not need to exists inside this class
-# TODO never put extra_args because they cannot be removed
-# TODO remove this function which comes from SPARK plugin
 def start_ITP(tree, file_name, abs_fn_path, args=[]):
     itp_lib.print_debug("[ITP] Launched")
-    # GPS.execute_action(action="Split horizontally")
 
-    # TODO all these options are already in spark2014.py
+    # TODO ??? start_ITP and prove_check to be merged.
     gnat_server = os_utils.locate_exec_on_path("gnat_server")
     objdirs = GPS.Project.root().object_dirs()
     default_objdir = objdirs[0]
     obj_subdir_name = "gnatprove"
     dir_name = os.path.join(default_objdir, obj_subdir_name)
-    # Gnat_server must be launched from gnatprove dir to find why3.conf
+    # gnat_server must be launched from gnatprove dir to find why3.conf
     os.chdir(dir_name)
     mlw_file = ""
     file_name_no_ext = os.path.splitext(file_name)[0]
