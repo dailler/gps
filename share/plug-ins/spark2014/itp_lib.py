@@ -115,6 +115,9 @@ def parse_notif(j, abs_tree, proof_task):
                         tree.update_iter(node_id, 4, "Not Valid")
                 elif proof_attempt_result == "Uninstalled":
                     tree.update_iter(node_id, 4, "Not Installed")
+                # TODO not implemented in Why3. Also, should match all cases.
+                # elif proof_attempt_result == "Detached":
+                #    tree.update_iter(node_id, 4, "Detached")
                 else:  # In this case it is necessary just a string
                     tree.update_iter(node_id, 4, "proof_attempt")
         else:
