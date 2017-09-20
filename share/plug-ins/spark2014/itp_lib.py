@@ -407,7 +407,7 @@ class Tree_with_process:
         # Initialize the Timeout for sending requests to ITP server. 300
         # milliseconds is arbitrary. It looks like it works and it should be ok
         # for interactivity.
-        GPS.Timeout(300, self.actual_send)
+        self.timeout = GPS.Timeout(300, self.actual_send)
 
     def kill(self):
         a = GPS.Console("ITP_interactive")
@@ -429,6 +429,10 @@ class Tree_with_process:
             self.process.kill()
         except:
             print ("Cannot kill why3_server process")
+        try:
+            self.timeout.remove()
+        except:
+            print ("Cannot stop timeout")
 
     def exit(self):
         if GPS.MDI.yes_no_dialog("Do you want to save session before exit?"):
