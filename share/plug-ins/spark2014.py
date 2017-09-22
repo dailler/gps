@@ -19,11 +19,6 @@ import json
 import re
 
 import sys
-# Import graphics Gtk libraries for ITP elements like the proof tree
-from gi.repository import Gtk, Gdk, GLib, Pango
-import pygps
-from modules import Module
-from gps_utils.console_process import Console_Process
 import fnmatch
 
 debug_session = False
@@ -43,9 +38,9 @@ debug_session = False
 cur_exec_path = os.path.dirname(os.path.abspath(__file__))
 
 # The xml information are under spark2014
-spark2014_dir = os.path.join (cur_exec_path, "spark2014")
+spark2014_dir = os.path.join(cur_exec_path, "spark2014")
 sys.path.append(spark2014_dir)
-import itp_lib
+import itp_lib  # noqa
 
 gnatprove_menus_file = os.path.join(spark2014_dir, "gnatprove_menus.xml")
 gnatprove_file = os.path.join(spark2014_dir, "gnatprove.xml")
@@ -1088,6 +1083,7 @@ def on_prove_check(context):
     GPS.BuildTarget(prove_check()).execute(extra_args=args,
                                            synchronous=False)
 
+
 # Check for GNAT toolchain: gnatprove
 
 gnatprove = os_utils.locate_exec_on_path(toolname)
@@ -1114,9 +1110,10 @@ def start_ITP(tree, file_name, abs_fn_path, args=[]):
     file_name_no_ext = os.path.splitext(file_name)[0]
     for dir_name, sub_dir_name, files in os.walk(dir_name):
         for file in files:
-            if fnmatch.fnmatch(file, file_name_no_ext + '.mlw') and mlw_file == "":
+            file_name_string = file_name_no_ext + '.mlw'
+            if fnmatch.fnmatch(file, file_name_string) and mlw_file == "":
                 mlw_file = os.path.join(dir_name, file)
-                itp_lib.print_debug (mlw_file)
+                itp_lib.print_debug(mlw_file)
     if mlw_file == "":
         itp_lib.print_debug("TODO")
 
@@ -1149,9 +1146,9 @@ def on_prove_itp(context):
         args.append("-U")
     GPS.Locations.remove_category("Builder results")
     start_ITP(tree, file_name, abs_fn_path, args)
-    # Add a hook to exit ITP before exiting GPS. Add the hook after ITP launched
-    # last = False so that it is the first hook to be run
-    if hook_itp == False:
+    # Add a hook to exit ITP before exiting GPS. Add the hook after ITP
+    # launched last = False so that it is the first hook to be run
+    if hook_itp is False:
         GPS.Hook("before_exit_action_hook").add(exit_ITP, last=False)
         hook_itp = True
 

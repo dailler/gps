@@ -1,18 +1,8 @@
-# TODO Remove unnecessary libs
 import GPS
-import sys
-import os_utils
-import os.path
-import tool_output
 import json
-import re
-from os import *
+from os import path, utime
 # Import graphics Gtk libraries for proof interactive elements
-from gi.repository import Gtk, Gdk, GLib, Pango
-import pygps
-from modules import Module
-from gps_utils.console_process import Console_Process
-import fnmatch
+from gi.repository import Gtk, Gdk
 
 debug_mode = False
 
@@ -80,9 +70,9 @@ def parse_notif(j, abs_tree, proof_task):
         parent_id = j["parent_ID"]
         node_type = j["node_type"]
         name = j["name"]
-        detached = j["detached"]
+        # use detached: detached = j["detached"]
         tree.add_iter(node_id, parent_id, name, node_type, "Invalid")
-        if not parent_id in tree.node_id_to_row_ref:
+        if parent_id not in tree.node_id_to_row_ref:
             # If the parent cannot be found then it is a root.
             tree.roots.append(node_id)
         print_debug("New_node")
@@ -101,7 +91,7 @@ def parse_notif(j, abs_tree, proof_task):
         elif update["update_info"] == "Proof_status_change":
             proof_attempt = update["proof_attempt"]
             obsolete = update["obsolete"]
-            limit = update["limit"]
+            # TODO use limit  limit = update["limit"]
             if obsolete:
                 tree.update_iter(node_id, 4, "Obsolete")
             else:
@@ -166,14 +156,16 @@ def parse_message(j):
     elif message_type == "Transf_error":
         tr_name = message["tr_name"]
         arg = message["failing_arg"]
-        loc = message["loc"]
+        # TODO use loc: loc = message["loc"]
         msg = message["error"]
         doc = message["doc"]
         if arg == "":
-            print_error(msg + "\nTranformation failed: \n" + tr_name + "\n\n", prompt=False)
+            err_message = msg + "\nTranformation failed: \n" + tr_name + "\n\n"
+            print_error(err_message, prompt=False)
             print_message(doc)
         else:
-            print_error(tr_name + "\nTransformation failed. \nOn argument: \n" + arg + " \n" + msg + "\n\n", prompt=False)
+            err_mes = "\nTransformation failed. \nOn argument: \n" + arg
+            print_error(tr_name + err_mes + " \n" + msg + "\n\n", prompt=False)
             print_message(doc)
     elif message_type == "Strat_error":
         print_error(message["error"])
@@ -200,14 +192,16 @@ def parse_message(j):
     else:
         print_debug("TODO")
 
+
 # Returns the biggest int res such that res < last and s[first:res] finish with
 # sep.
-def find_last (s, sep, first, last):
+def find_last(s, sep, first, last):
     res = s.find(sep, first, last)
     if res == -1 or res == first:
         return(first)
     else:
         return (find_last(s, sep, (res + len(sep)), last))
+
 
 class Tree:
 
@@ -227,7 +221,11 @@ class Tree:
         self.box.pack_start(scroll, True, True, 0)
 
         # TODO to be found: correct groups ???
-        GPS.MDI.add(self.box, "Proof Tree", "Proof Tree", group=101, position=4)
+        GPS.MDI.add(self.box,
+                    "Proof Tree",
+                    "Proof Tree",
+                    group=101,
+                    position=4)
 
         # roots is a list of nodes that does not have parents. When they are
         # all proved, we know the check is proved.
@@ -273,7 +271,7 @@ class Tree:
         # We have a dictionnary from node_id to row_references because we want
         # an "efficient" way to get/remove/etc a particular row and we are not
         # going to go through the whole tree each time: O(n) vs O (ln n)
-        # TODO find something that do exactly this in Gtk ??? (does not exist ?)
+        # find something that do exactly this in Gtk ??? (does not exist ?)
         self.node_id_to_row_ref = {}
 
     def exit(self):
@@ -302,13 +300,19 @@ class Tree:
             if debug_mode:
                 print ("add_iter ?error?: parent does not exists %d", parent)
 
-        # Append as a child of parent_iter. parent_iter can be None (toplevel iter)
+        # Append as a child of parent_iter. parent_iter can be None
+        # (toplevel iter).
         new_iter = self.model.append(parent_iter)
         color = create_color(proved)
-        self.model[new_iter] = [str(node), str(parent), name, node_type, proved, color]
+        self.model[new_iter] = [str(node),
+                                str(parent),
+                                name,
+                                node_type,
+                                proved,
+                                color]
         self.set_iter(new_iter, node)
-        # ??? We currently always expand the tree. We may not want to do that in
-        # the future.
+        # ??? We currently always expand the tree. We may not want to do that
+        # in the future.
         self.view.expand_all()
 
     def update_iter(self, node_id, field, value):
@@ -331,7 +335,10 @@ class Tree:
     def node_jump_select(self, from_node, to_node):
         tree_selection = self.view.get_selection()
         try:
-            if not tree_selection.count_selected_rows() == 0 and not from_node is None:
+            # ??? Found documentation online refering this parenthesis style as
+            # a workaround for pep8 pyflakes madness.
+            if ((((not tree_selection.count_selected_rows() == 0 and
+                   from_node is not None)))):
                 from_node_row = self.node_id_to_row_ref[from_node]
                 from_node_path = from_node_row.get_path()
                 from_node_iter = self.model.get_iter(from_node_path)
@@ -342,21 +349,20 @@ class Tree:
                     parent = from_node
                 parent_row = self.node_id_to_row_ref[parent]
                 parent_path = parent_row.get_path()
-                if (tree_selection.path_is_selected(from_node_path) or
-                    tree_selection.path_is_selected(parent_path)):
+                if ((((tree_selection.path_is_selected(from_node_path) or
+                       tree_selection.path_is_selected(parent_path))))):
                     tree_selection.unselect_all()
                     to_node_row = self.node_id_to_row_ref[to_node]
                     to_node_path = to_node_row.get_path()
-                    to_node_iter = self.model.get_iter(to_node_path)
                     tree_selection.select_path(to_node_path)
             else:
                 to_node_row = self.node_id_to_row_ref[to_node]
                 to_node_path = to_node_row.get_path()
-                to_node_iter = self.model.get_iter(to_node_path)
                 tree_selection.select_path(to_node_path)
         except:
             # The node we are jumping to does not exists
-            print_debug ("Error in jumping: the node : " + str(to_node) + " probably does not exists")
+            err_message = "Error in jumping: the node : " + str(to_node)
+            print_debug(err_message + " probably does not exists")
 
     # Checks if all the roots are proved. If so, the check is proved and we can
     # exit.
@@ -368,6 +374,7 @@ class Tree:
             iter = self.model.get_iter(path)
             b = b and self.model[iter][4] == "Proved"
         return(b)
+
 
 class Tree_with_process:
     def __init__(self):
@@ -387,8 +394,11 @@ class Tree_with_process:
 
         # init the tree
         self.tree = Tree()
-        self.process = GPS.Process(command, regexp=">>>>", on_match=self.check_notifications)
-        self.console = GPS.Console("ITP_interactive", on_input=self.interactive_console_input)
+        self.process = GPS.Process(command,
+                                   regexp=">>>>",
+                                   on_match=self.check_notifications)
+        self.console = GPS.Console("ITP_interactive",
+                                   on_input=self.interactive_console_input)
         self.console.write("> ")
         # Back to the Messages console
         GPS.Console()
@@ -399,7 +409,9 @@ class Tree_with_process:
 
         # Define a proof task
         proof_task_file = GPS.File("Proof Task", local=True)
-        self.proof_task = GPS.EditorBuffer.get(proof_task_file, force=True, open=True)
+        self.proof_task = GPS.EditorBuffer.get(proof_task_file,
+                                               force=True,
+                                               open=True)
         self.proof_task.set_read_only()
         # ??? should prefer using group and position. Currently, this works.
         GPS.execute_action(action="Split horizontally")
@@ -471,26 +483,27 @@ class Tree_with_process:
 
     def interactive_console_input(self, console, command):
         tree_selection = self.tree.view.get_selection()
-        tree_selection.selected_foreach(lambda tree_model, tree_path, tree_iter: self.send_request(tree_model[tree_iter][0], command))
+        tree_selection.selected_foreach(
+            lambda tree_model, tree_path, tree_iter:
+            self.send_request(tree_model[tree_iter][0], command))
 
     # This function actually send data and is also put into a Timeout call
     def actual_send(self, useless_timeout):
-        print_debug ("sent")
-        # TODO ??? this should not be necessary to prevent deadlock with our own
+        print_debug("sent")
+        # ??? this should not be necessary to prevent deadlock with our own
         # code here. This looks really bad and should be investigated: if this
         # kind of checks really is necessary, it should be done in function
         # send/on_match from GPS.Process (obviously not here).
         if not self.size_queue == 0 and not self.checking_notification:
             # We send only complete request and less than 4080 char
             n = find_last(self.send_queue, ">>>>", 0, 4080)
-            if n == -1 or n == 0 or n == None:
+            if n == -1 or n == 0 or n is None:
                 self.send_queue = ""
                 self.size_queue = 0
             else:
                 self.process.send(self.send_queue[0:n])
                 self.send_queue = self.send_queue[n:]
                 self.size_queue = len(self.send_queue)
-
 
     # This is used as a wrapper (for debug) that actually create the message.
     # The function really sending this is called actual_send. 2 functions are
@@ -502,9 +515,10 @@ class Tree_with_process:
             print_message(s)
         self.send_queue = self.send_queue + s + ">>>>"
         self.size_queue = self.size_queue + len(s) + 4
-        # From different documentation, it can be assumed that pipes have a size
-        # of at least 4096 (on all platforms). So, our heuristic is to check at
-        # 3800 if it is worth sending before the timeout automatically does it.
+        # From different documentation, it can be assumed that pipes have a
+        # size of at least 4096 (on all platforms). So, our heuristic is to
+        # check at 3800 if it is worth sending before the timeout
+        # automatically does it.
         if self.size_queue > 3800:
             self.actual_send(0)
 
@@ -516,16 +530,17 @@ class Tree_with_process:
             # touch source file so that gnatprove believes that gnat2why should
             # be called again. Otherwise, we change the session and the change
             # cannot be seen in gnatprove because it does not recompile.
-            if os.path.exists(self.file_name):
+            if path.exists(self.file_name):
                 # Set the modification time as now.
-                os.utime(self.file_name, None)
+                utime(self.file_name, None)
             return "{\"ide_request\": \"Save_req\" " + " }"
         elif command == "Remove":
             return ("{\"ide_request\": \"Remove_subtree\", \"node_ID\":" +
                     str(node_id) + " }")
         else:
             return ("{\"ide_request\": \"Command_req\", \"node_ID\":" +
-                    str(node_id) + ", \"command\" : " + json.dumps(command) + " }")
+                    str(node_id) + ", \"command\" : " +
+                    json.dumps(command) + " }")
 
     def send_request(self, node_id, command):
         request = self.command_request(command, node_id)
@@ -534,8 +549,10 @@ class Tree_with_process:
 
     # Specific get_task function to get a task from the itp_server.
     def get_task(self, node_id):
-        request = "{\"ide_request\": \"Get_task\", \"node_ID\":" + str(node_id) + ", \"do_intros\": true, \"loc\": false}"
+        request = ("{\"ide_request\": \"Get_task\", \"node_ID\":" +
+                   str(node_id) + ", \"do_intros\": true, \"loc\": false}")
         self.send(request)
 
     def get_next_id(self, modified_id):
-        self.send("{\"ide_request\": \"Get_first_unproven_node\", \"node_ID\":" + modified_id + "}")
+        req = "{\"ide_request\": \"Get_first_unproven_node\", \"node_ID\":"
+        self.send(req + modified_id + "}")
