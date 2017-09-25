@@ -17,7 +17,6 @@ import os.path
 import tool_output
 import json
 import re
-
 import sys
 import fnmatch
 
@@ -1095,6 +1094,26 @@ if gnatprove:
     gnatprove_plug = GNATProve_Plugin()
 
 
+# ??? This function is only used to return the proof_dir if any. This function
+# should use GPS's get_attribute but it does not work.
+def has_proof_dir():
+    root_project_file = str(GPS.Project.root().file())
+    proof_dir = ""
+    with open(root_project_file, 'r') as project_file:
+        data = project_file.read()
+        # We matched the string for: "for Proof_Dir use "match";". This has to
+        # be used to be able to use manual proof. So this allows us to retrieve
+        # the directory where proofs are located.
+        match = re.search('for\s+Proof_Dir\s+use\s+\"(.*?)\";',
+                          data,
+                          flags=re.UNICODE)
+        if match is not None:
+            proof_dir = match.group(1)
+            root_project_dir = os.path.dirname(root_project_file)
+            proof_dir = os.path.join(root_project_dir, proof_dir)
+    return(proof_dir)
+
+
 def start_ITP(tree, file_name, abs_fn_path, args=[]):
     itp_lib.print_debug("[ITP] Launched")
 
@@ -1120,10 +1139,15 @@ def start_ITP(tree, file_name, abs_fn_path, args=[]):
     # The arguments passed are of the following form (remove '='):
     # --limit-line=a.adb:42:42:VC_POSTCONDITION
     arg_limit_line = args[0].replace('=', ' ')
-    if debug_session:
-        command = gnat_server + " " + mlw_file
+    proof_dir = has_proof_dir()
+    if proof_dir == "":
+        command = gnat_server + " "
     else:
-        command = gnat_server + " " + arg_limit_line + " " + mlw_file
+        command = gnat_server + " " + "--proof-dir " + proof_dir + " "
+    if debug_session:
+        command = command + mlw_file
+    else:
+        command = command + arg_limit_line + " " + mlw_file
     itp_lib.print_debug(command)
     tree.start(command, abs_fn_path)
 
